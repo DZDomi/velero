@@ -19,6 +19,9 @@ package kube
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/validation"
+	kubeerrs "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"strings"
 	"time"
 
@@ -353,4 +356,22 @@ func HasBackupLabel(o *metav1.ObjectMeta, backupName string) bool {
 		return false
 	}
 	return o.Labels[velerov1api.BackupNameLabel] == label.GetValidName(backupName)
+}
+
+func ValidateAnnotations(annotations map[string]string) error {
+	if annotations == nil {
+		return nil
+	}
+	fldPath := field.NewPath("metadata", "annotations")
+	fldErrors := validation.ValidateAnnotations(annotations, fldPath)
+
+	if len(fldErrors) == 0 {
+		return nil
+	} else {
+		var errList []error
+		for _, err := range fldErrors {
+			errList = append(errList, err)
+		}
+		return kubeerrs.NewAggregate(errList)
+	}
 }

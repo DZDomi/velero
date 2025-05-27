@@ -340,8 +340,12 @@ func (s *nodeAgentServer) run() {
 
 	podAnnotations := map[string]string{}
 	if s.dataPathConfigs != nil && s.dataPathConfigs.PodAnnotations != nil {
-		podAnnotations = s.dataPathConfigs.PodAnnotations
-		s.logger.Infof("Using customized pod annotation config %v", s.dataPathConfigs.PodAnnotations)
+		if err := kube.ValidateAnnotations(s.dataPathConfigs.PodAnnotations); err != nil {
+			s.logger.WithError(err).Warn("Provided pod annotations are invalid, ignoring")
+		} else {
+			podAnnotations = s.dataPathConfigs.PodAnnotations
+			s.logger.Infof("Using customized pod annotation config %v", s.dataPathConfigs.PodAnnotations)
+		}
 	}
 
 	dataUploadReconciler := controller.NewDataUploadReconciler(

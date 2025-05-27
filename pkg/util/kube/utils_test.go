@@ -680,3 +680,50 @@ func TestHasBackupLabel(t *testing.T) {
 		assert.Equal(t, tc.expected, actual)
 	}
 }
+
+func TestValidateAnnotations(t *testing.T) {
+	testCases := []struct {
+		name        string
+		annotations map[string]string
+		error       bool
+	}{
+		{
+			name:        "should return no error when no annotations are set",
+			annotations: nil,
+			error:       false,
+		},
+		{
+			name: "should return no error for only valid annotations",
+			annotations: map[string]string{
+				"velero.io/my-annotation1": "my-annotation-value1",
+				"velero.io/my-annotation2": "my-annotation-value2",
+			},
+			error: false,
+		},
+		{
+			name: "should return error if one of the keys of the annotations is invalid",
+			annotations: map[string]string{
+				"":                         "my-annotation-value1",
+				"velero.io/my-annotation2": "my-annotation-value2",
+			},
+			error: true,
+		},
+		{
+			name: "should return error if all keys of the annotations are invalid",
+			annotations: map[string]string{
+				"velero%/invalid1": "my-annotation-value1",
+				"velero&invalid1":  "my-annotation-value2",
+			},
+			error: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := ValidateAnnotations(tc.annotations)
+		if tc.error {
+			assert.Error(t, actual)
+		} else {
+			assert.NoError(t, actual)
+		}
+	}
+}
