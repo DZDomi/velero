@@ -66,12 +66,13 @@ type DataDownloadReconciler struct {
 	dataPathMgr      *datapath.Manager
 	restorePVCConfig nodeagent.RestorePVC
 	podResources     corev1api.ResourceRequirements
+	podAnnotations   map[string]string
 	preparingTimeout time.Duration
 	metrics          *metrics.ServerMetrics
 }
 
 func NewDataDownloadReconciler(client client.Client, mgr manager.Manager, kubeClient kubernetes.Interface, dataPathMgr *datapath.Manager,
-	restorePVCConfig nodeagent.RestorePVC, podResources corev1api.ResourceRequirements, nodeName string, preparingTimeout time.Duration,
+	restorePVCConfig nodeagent.RestorePVC, podResources corev1api.ResourceRequirements, podAnnotations map[string]string, nodeName string, preparingTimeout time.Duration,
 	logger logrus.FieldLogger, metrics *metrics.ServerMetrics) *DataDownloadReconciler {
 	return &DataDownloadReconciler{
 		client:           client,
@@ -84,6 +85,7 @@ func NewDataDownloadReconciler(client client.Client, mgr manager.Manager, kubeCl
 		restorePVCConfig: restorePVCConfig,
 		dataPathMgr:      dataPathMgr,
 		podResources:     podResources,
+		podAnnotations:   podAnnotations,
 		preparingTimeout: preparingTimeout,
 		metrics:          metrics,
 	}
@@ -755,6 +757,18 @@ func (r *DataDownloadReconciler) setupExposeParam(dd *velerov2alpha1api.DataDown
 				log.WithError(err).Warnf("Failed to check node-agent annotation, skip adding host pod annotation %s", k)
 			}
 		} else {
+			hostingPodAnnotation[k] = v
+		}
+	}
+
+	if r.podAnnotations != nil {
+		for k, v := range r.podAnnotations {
+			if _, exists := hostingPodAnnotation[k]; exists {
+				log.WithFields(logrus.Fields{
+					"annotationKey":   k,
+					"annotationValue": v,
+				}).Warnf("Pod annotation already exists, overwriting with custom annotation set in configuration")
+			}
 			hostingPodAnnotation[k] = v
 		}
 	}

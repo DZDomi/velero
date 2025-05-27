@@ -338,6 +338,12 @@ func (s *nodeAgentServer) run() {
 		}
 	}
 
+	podAnnotations := map[string]string{}
+	if s.dataPathConfigs != nil && s.dataPathConfigs.PodAnnotations != nil {
+		podAnnotations = s.dataPathConfigs.PodAnnotations
+		s.logger.Infof("Using customized pod annotation config %v", s.dataPathConfigs.PodAnnotations)
+	}
+
 	dataUploadReconciler := controller.NewDataUploadReconciler(
 		s.mgr.GetClient(),
 		s.mgr,
@@ -347,6 +353,7 @@ func (s *nodeAgentServer) run() {
 		loadAffinity,
 		backupPVCConfig,
 		podResources,
+		podAnnotations,
 		clock.RealClock{},
 		s.nodeName,
 		s.config.dataMoverPrepareTimeout,
@@ -363,7 +370,7 @@ func (s *nodeAgentServer) run() {
 		s.logger.Infof("Using customized restorePVC config %v", restorePVCConfig)
 	}
 
-	dataDownloadReconciler := controller.NewDataDownloadReconciler(s.mgr.GetClient(), s.mgr, s.kubeClient, s.dataPathMgr, restorePVCConfig, podResources, s.nodeName, s.config.dataMoverPrepareTimeout, s.logger, s.metrics)
+	dataDownloadReconciler := controller.NewDataDownloadReconciler(s.mgr.GetClient(), s.mgr, s.kubeClient, s.dataPathMgr, restorePVCConfig, podResources, podAnnotations, s.nodeName, s.config.dataMoverPrepareTimeout, s.logger, s.metrics)
 	if err = dataDownloadReconciler.SetupWithManager(s.mgr); err != nil {
 		s.logger.WithError(err).Fatal("Unable to create the data download controller")
 	}

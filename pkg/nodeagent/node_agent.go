@@ -102,6 +102,9 @@ type Configs struct {
 
 	// PodResources is the resource config for various types of pods launched by node-agent, i.e., data mover pods.
 	PodResources *kube.PodResources `json:"podResources,omitempty"`
+
+	// PodAnnotations is the config to set additional annotations of pods launched by node-agent, i.e., data mover pods.
+	PodAnnotations map[string]string `json:"podAnnotations,omitempty"`
 }
 
 func IsRunningOnLinux(ctx context.Context, kubeClient kubernetes.Interface, namespace string) error {

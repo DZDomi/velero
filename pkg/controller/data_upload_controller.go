@@ -75,6 +75,7 @@ type DataUploadReconciler struct {
 	loadAffinity        *kube.LoadAffinity
 	backupPVCConfig     map[string]nodeagent.BackupPVC
 	podResources        corev1api.ResourceRequirements
+	podAnnotations      map[string]string
 	preparingTimeout    time.Duration
 	metrics             *metrics.ServerMetrics
 }
@@ -88,6 +89,7 @@ func NewDataUploadReconciler(
 	loadAffinity *kube.LoadAffinity,
 	backupPVCConfig map[string]nodeagent.BackupPVC,
 	podResources corev1api.ResourceRequirements,
+	podAnnotations map[string]string,
 	clock clocks.WithTickerAndDelayedExecution,
 	nodeName string,
 	preparingTimeout time.Duration,
@@ -113,6 +115,7 @@ func NewDataUploadReconciler(
 		loadAffinity:     loadAffinity,
 		backupPVCConfig:  backupPVCConfig,
 		podResources:     podResources,
+		podAnnotations:   podAnnotations,
 		preparingTimeout: preparingTimeout,
 		metrics:          metrics,
 	}
@@ -839,6 +842,18 @@ func (r *DataUploadReconciler) setupExposeParam(du *velerov2alpha1api.DataUpload
 					log.WithError(err).Warnf("Failed to check node-agent annotation, skip adding host pod annotation %s", k)
 				}
 			} else {
+				hostingPodAnnotation[k] = v
+			}
+		}
+
+		if r.podAnnotations != nil {
+			for k, v := range r.podAnnotations {
+				if _, exists := hostingPodAnnotation[k]; exists {
+					log.WithFields(logrus.Fields{
+						"annotationKey":   k,
+						"annotationValue": v,
+					}).Warnf("Pod annotation already exists, overwriting with custom annotation set in configuration")
+				}
 				hostingPodAnnotation[k] = v
 			}
 		}
